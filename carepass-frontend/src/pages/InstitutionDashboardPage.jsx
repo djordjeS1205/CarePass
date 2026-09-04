@@ -11,19 +11,25 @@ export default function InstitutionDashboardPage({ user }) {
   const [action, setAction] = useState("");
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const requests = useMemo(() => documentService.getAllCandidateDocuments().filter((document) => document.institution === user.organization || document.authority === user.organization), [user.organization, revision]);
   const pending = requests.filter((document) => ["pending", "needs_update"].includes(document.status));
   const completed = requests.filter((document) => !["pending", "needs_update"].includes(document.status));
 
-  function submitDecision() {
+  async function submitDecision() {
     setError("");
     if (!action) return setError("Izaberite radnju.");
     if (!reason.trim()) return setError("Obrazloženje je obavezno za svaku institucionalnu odluku.");
     const status = action === "accept" ? "verified" : action === "supplement" ? "needs_update" : "rejected";
-    documentService.updateVerification(selected.ownerId, selected.id, status, reason.trim(), user);
-    auditService.record(user, "credential_verification", selected.id, status, reason.trim());
-    setSelected(null); setAction(""); setReason(""); setRevision((value) => value + 1);
+    setSubmitting(true);
+    try {
+      await documentService.updateVerification(selected.ownerId, selected.id, status, reason.trim(), user);
+      auditService.record(user, "credential_verification", selected.id, status, reason.trim());
+      setSelected(null); setAction(""); setReason(""); setRevision((value) => value + 1);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function RequestList({ items }) {
@@ -53,7 +59,7 @@ export default function InstitutionDashboardPage({ user }) {
             <h2>{selected.title}</h2>
             <dl className="details-grid"><div><dt>Kandidat</dt><dd>{authService.getUserById(selected.ownerId)?.fullName}</dd></div><div><dt>Vrsta</dt><dd>{selected.type}</dd></div><div><dt>Broj dokumenta</dt><dd>{selected.documentNumber}</dd></div><div><dt>Datum izdavanja</dt><dd>{selected.issuedAt}</dd></div><div className="full-detail"><dt>SHA-256 digitalni otisak</dt><dd className="hash-value">{selected.fileHash || "Demo dokument – hash nije upisan"}</dd></div></dl>
             <div className="decision-box"><h3>Institucionalna odluka</h3><div className="decision-options"><label><input type="radio" name="institution-action" value="accept" checked={action === "accept"} onChange={(e) => setAction(e.target.value)} /> Prihvati</label><label><input type="radio" name="institution-action" value="supplement" checked={action === "supplement"} onChange={(e) => setAction(e.target.value)} /> Traži dopunu</label><label><input type="radio" name="institution-action" value="reject" checked={action === "reject"} onChange={(e) => setAction(e.target.value)} /> Odbij</label></div><textarea placeholder="Obavezno obrazloženje i uputstvo kandidatu" value={reason} onChange={(e) => setReason(e.target.value)} />{error && <p className="form-message error-message">{error}</p>}</div>
-            <div className="form-actions"><button className="outline-button" type="button" onClick={() => setSelected(null)}>Zatvori</button><button className="action-button" type="button" onClick={submitDecision}>Potvrdi odluku</button></div>
+            <div className="form-actions"><button className="outline-button" type="button" onClick={() => setSelected(null)} disabled={submitting}>Zatvori</button><button className="action-button" type="button" onClick={submitDecision} disabled={submitting}>{submitting ? "Upisujem odluku…" : "Potvrdi odluku"}</button></div>
           </section>
         </div>
       )}

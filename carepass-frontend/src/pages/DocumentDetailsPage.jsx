@@ -44,6 +44,24 @@ export default function DocumentDetailsPage({ document, onNavigate, onEdit }) {
           <div className="full-detail"><dt>SHA-256 digitalni otisak</dt><dd className="hash-value">{document.fileHash || "Biće izračunat prilikom unosa stvarnog fajla"}</dd></div>
         </dl>
 
+        {document.chainMode === "chain" && document.chainTx && (
+          <div className="chain-record chain-success">
+            <strong>Upisano na blockchain (Sepolia)</strong>
+            <p className="hash-value">
+              Transakcija:{" "}
+              <a href={`https://sepolia.etherscan.io/tx/${document.chainTx}`} target="_blank" rel="noopener noreferrer">
+                {document.chainTx}
+              </a>
+            </p>
+          </div>
+        )}
+        {document.chainMode === "demo" && (
+          <div className="chain-record chain-demo">Ugovor još nije deployovan – ovaj zapis postoji samo lokalno (demo režim).</div>
+        )}
+        {document.chainMode === "error" && (
+          <div className="chain-record chain-error">Upis na blockchain nije uspeo: {document.chainError}</div>
+        )}
+
         <section className="history-section">
           <h3>Istorija dokumenta</h3>
           {(document.history || []).map((item, index) => (

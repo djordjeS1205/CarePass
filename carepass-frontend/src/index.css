@@ -32,6 +32,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .header-link { padding: 10px 0; color: #09643f; background: transparent; border: 0; font-family: Georgia, serif; font-size: 18px; }
 .header-primary-button { min-width: 96px; height: 46px; padding: 0 20px; color: #fff; background: var(--button-green); border: 0; border-radius: 13px; font-family: Georgia, serif; font-size: 18px; font-weight: 700; }
 .header-primary-button:hover, .action-button:hover, .dashboard-add-button:hover, .primary-button:hover, .form-submit:hover { background: var(--button-hover); }
+.wallet-connect-wrap { display: flex; align-items: center; gap: 6px; }
+.wallet-badge { padding: 6px 12px; border-radius: 999px; font-family: Georgia, serif; font-size: 14px; font-weight: 700; }
+.wallet-badge.wallet-connected { color: #126647; background: var(--badge); }
+.wallet-badge.wallet-demo { color: #7a6205; background: #fdf3d6; }
+.wallet-error { max-width: 220px; color: #b3261e; font-size: 12px; }
+
+.chain-record { margin-top: 12px; padding: 14px 18px; background: #f4f8f6; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; }
+.chain-record.chain-demo { color: #7a6205; background: #fdf3d6; }
+.chain-record.chain-error { color: #b3261e; background: #fbe9e7; }
+.chain-record .hash-value { word-break: break-all; }
 
 /* Shared */
 .carepass-badge { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 17px; color: #126647; background: var(--badge); border-radius: 999px; font-size: 16px; font-weight: 700; }

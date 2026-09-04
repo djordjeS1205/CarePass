@@ -2,6 +2,7 @@ import { demoDocuments } from "../data/mockData";
 import {
   registerCredentialHash,
   registerCredentialVersion,
+  recordVerificationStatus,
 } from "./contractService";
 
 const DOCUMENTS_PREFIX = "carepass_documents_";
@@ -97,9 +98,23 @@ function getAllCandidateDocuments() {
   );
 }
 
-function updateVerification(userId, documentId, status, explanation, actor) {
+async function updateVerification(userId, documentId, status, explanation, actor) {
   const documents = getDocuments(userId);
+  const current = documents.find((document) => document.id === documentId);
+  if (!current) throw new Error("Dokument nije pronađen.");
+
   const now = new Date();
+  let chainNote = "";
+
+  try {
+    const chainResult = await recordVerificationStatus(documentId, Math.max(current.version - 1, 0), status);
+    if (chainResult.mode === "chain") {
+      chainNote = ` (upisano na blockchain, tx ${chainResult.transactionHash.slice(0, 10)}…)`;
+    }
+  } catch (error) {
+    chainNote = ` (upis na blockchain nije uspeo: ${error.message})`;
+  }
+
   const updatedDocuments = documents.map((document) => {
     if (document.id !== documentId) return document;
     const verified = status === "verified";
@@ -124,7 +139,7 @@ function updateVerification(userId, documentId, status, explanation, actor) {
         ...(document.history || []),
         {
           date: now.toLocaleString("sr-RS"),
-          text: `${actor.organization || actor.fullName}: ${explanation}`,
+          text: `${actor.organization || actor.fullName}: ${explanation}${chainNote}`,
         },
       ],
     };
@@ -176,7 +191,16 @@ async function createDocument(userId, formData, file) {
   };
 
   await saveFile(id, file);
-  await registerCredentialHash(document);
+
+  try {
+    const chainResult = await registerCredentialHash(document);
+    document.chainMode = chainResult.mode;
+    document.chainTx = chainResult.transactionHash;
+  } catch (error) {
+    document.chainMode = "error";
+    document.chainError = error.message;
+  }
+
   persistDocuments(userId, [document, ...documents]);
   return document;
 }
@@ -214,7 +238,15 @@ async function updateDocument(userId, documentId, formData, file) {
   };
 
   if (file) await saveFile(documentId, file);
-  await registerCredentialVersion(updated);
+
+  try {
+    const chainResult = await registerCredentialVersion(updated);
+    updated.chainMode = chainResult.mode;
+    updated.chainTx = chainResult.transactionHash;
+  } catch (error) {
+    updated.chainMode = "error";
+    updated.chainError = error.message;
+  }
 
   persistDocuments(
     userId,
